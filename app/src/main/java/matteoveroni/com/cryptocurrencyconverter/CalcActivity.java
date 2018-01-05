@@ -3,9 +3,12 @@ package matteoveroni.com.cryptocurrencyconverter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,41 +16,42 @@ import com.toptoche.searchablespinnerlibrary.SearchableSpinner;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.w3c.dom.Text;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import butterknife.OnEditorAction;
+import butterknife.OnTextChanged;
 import matteoveroni.com.cryptocurrencyconverter.web.WebConversionService;
-import matteoveroni.com.cryptocurrencyconverter.web.pojos.conversions.WebConversion;
+import matteoveroni.com.cryptocurrencyconverter.web.WebConversionServiceBuilder;
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.Currency;
+import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.FamousCurrencies;
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.WebCurrenciesList;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class CalcActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
     private static final String TAG = CalcActivity.class.getSimpleName();
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-    private static final int DECIMAL_DIGITS = 14;
+
     private static final String SPINNER_TITLE_SELECT_CURRENCY = "Select currency";
+
+    @BindView(R.id.lbl_amountToConvert)
+    TextView lbl_amountToConvert;
+
+    @BindView(R.id.txt_amountToConvert)
+    EditText txt_amountToConvert;
 
     @BindView(R.id.spinnerConvertFrom)
     SearchableSpinner spinnerConvertFrom;
 
     @BindView(R.id.spinnerConvertTo)
     SearchableSpinner spinnerConvertTo;
-
-    @BindView(R.id.txt_amountToConvert)
-    TextView txt_amountToConvert;
 
     @BindView(R.id.lbl_conversionResult)
     TextView lbl_conversionResult;
@@ -58,6 +62,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     private int spinnerConvertFromId;
     private int spinnerConvertToId;
 
+    private CurrencyConverter currencyConverter;
     private Currency currencyToConvertFrom;
     private Currency currencyToConvertTo;
 
@@ -67,11 +72,12 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         final int parentID = parent.getId();
 
-        if (parentID == spinnerConvertFromId)
+        if (parentID == spinnerConvertFromId) {
             currencyToConvertFrom = (Currency) spinnerConvertFrom.getSelectedItem();
-
-        else if (parentID == spinnerConvertToId)
+            lbl_amountToConvert.setText(String.format("%s %s (%s):", "Amount of", currencyToConvertFrom.getName(), currencyToConvertFrom.getCode()));
+        } else if (parentID == spinnerConvertToId) {
             currencyToConvertTo = (Currency) spinnerConvertTo.getSelectedItem();
+        }
     }
 
     @Override
@@ -84,13 +90,14 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_calc);
         ButterKnife.bind(this);
-        initWebConversionService();
-
-        DECIMAL_FORMAT.setMaximumFractionDigits(DECIMAL_DIGITS);
-
 
         Typeface iconFont = FontManager.getTypeface(getApplicationContext(), FontManager.FONTAWESOME);
         FontManager.markAsIconContainer(findViewById(R.id.btn_switchCurrencies), iconFont);
+
+        txt_amountToConvert.setText("1");
+
+        conversionService = WebConversionServiceBuilder.build();
+        currencyConverter = new CurrencyConverter(getApplicationContext(), conversionService, lbl_conversionResult);
 
         spinnerConvertFromId = spinnerConvertFrom.getId();
         spinnerConvertFrom.setOnItemSelectedListener(this);
@@ -103,9 +110,14 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         populateCurrenciesSpinners();
     }
 
+    @OnTextChanged(value = R.id.txt_amountToConvert, callback = OnTextChanged.Callback.AFTER_TEXT_CHANGED)
+    void onEditTxtAmountToConvert() {
+        txt_amountToConvert.setSelection(txt_amountToConvert.getText().length());
+    }
+
     @OnClick(R.id.btn_switchCurrencies)
     public void onButtonSwitchCurrenciesClicked() {
-        lbl_conversionResult.setText("0");
+        lbl_conversionResult.setText("");
 
         Currency oldCurrencyToConvertFrom = currencyToConvertFrom;
         Currency oldCurrencyToConvertTo = currencyToConvertTo;
@@ -118,18 +130,13 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         selectCurrencyInSpinner(oldCurrencyToConvertFrom.getCode(), spinnerConvertTo);
 
         double amountToConvert = Double.valueOf(txt_amountToConvert.getText().toString());
-        convert(amountToConvert, currencyToConvertFrom.getCode(), currencyToConvertTo.getCode());
+        currencyConverter.convert(amountToConvert, currencyToConvertFrom.getCode(), currencyToConvertTo.getCode());
     }
 
     @OnClick(R.id.btn_convertCurrencies)
     public void onButtonConvertCurrenciesClicked() {
-        if (currencyToConvertFrom == null) {
-            Toast.makeText(this, "Select a currency to convert from", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (currencyToConvertTo == null) {
-            Toast.makeText(this, "Select a currency to convert from", Toast.LENGTH_SHORT).show();
+        if (currencyToConvertFrom == null || currencyToConvertTo == null) {
+            Toast.makeText(this, "Select a currency to convert from and a currency to convert to", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -140,48 +147,13 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
             return;
         }
 
-        final double amountToConvert = Double.valueOf(str_amountToConvert);
-
         lbl_conversionResult.setText("Calculating...");
 
         String convertFrom = currencyToConvertFrom.getCode().toLowerCase();
         String convertTo = currencyToConvertTo.getCode().toLowerCase();
 
-        convert(amountToConvert, convertFrom, convertTo);
-    }
-
-    private void convert(final double amountToConvert, String convertFrom, String convertTo) {
-        final Call<WebConversion> conversionRequest = conversionService.getConversion(convertFrom, convertTo);
-        conversionRequest.enqueue(new Callback<WebConversion>() {
-            @Override
-            public void onResponse(Call<WebConversion> request, Response<WebConversion> response) {
-                WebConversion conversion = response.body();
-
-                if (conversion == null) {
-                    Toast.makeText(
-                            CalcActivity.this,
-                            "Unknown error! Try to select different currencies",
-                            Toast.LENGTH_SHORT
-                    ).show();
-                    return;
-                }
-
-                if (conversion.getTicker() == null) {
-                    lbl_conversionResult.setText(conversion.getError());
-                } else {
-
-                    double price = Double.valueOf(conversion.getTicker().getPrice());
-
-                    double result = amountToConvert * price;
-                    lbl_conversionResult.setText(DECIMAL_FORMAT.format(result));
-                }
-            }
-
-            @Override
-            public void onFailure(Call<WebConversion> request, Throwable t) {
-                Toast.makeText(CalcActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        final double amountToConvert = Double.valueOf(str_amountToConvert);
+        currencyConverter.convert(amountToConvert, convertFrom, convertTo);
     }
 
     private void populateCurrenciesSpinners() {
@@ -206,8 +178,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
                     spinnerConvertFrom.setAdapter(currencyAdapter);
                     spinnerConvertTo.setAdapter(currencyAdapter);
 
-                    selectCurrencyInSpinner(FamousCurrencies.Bitcoin.getCode(), spinnerConvertFrom);
-                    selectCurrencyInSpinner(FamousCurrencies.Dollar.getCode(), spinnerConvertTo);
+                    populateSpinnersUsingDollarsAndBitcoin();
                 }
             }
 
@@ -218,17 +189,14 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         });
     }
 
-    private void selectCurrencyInSpinner(String currencyCode, SearchableSpinner spinner) {
+    private void populateSpinnersUsingDollarsAndBitcoin() {
+        selectCurrencyInSpinner(FamousCurrencies.Bitcoin.getCode(), spinnerConvertFrom);
+        selectCurrencyInSpinner(FamousCurrencies.Dollar.getCode(), spinnerConvertTo);
+    }
+
+    private void selectCurrencyInSpinner(String currencyCode, Spinner spinner) {
         Currency currency = currencies.get(currencyCode.toUpperCase());
         int currencyPosition = currencyAdapter.getPosition(currency);
         spinner.setSelection(currencyPosition);
-    }
-
-    private void initWebConversionService() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(WebConversionService.WEB_CONVERSION_BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        conversionService = retrofit.create(WebConversionService.class);
     }
 }

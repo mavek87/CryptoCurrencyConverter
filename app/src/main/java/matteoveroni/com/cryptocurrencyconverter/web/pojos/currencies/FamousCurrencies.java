@@ -1,4 +1,4 @@
-package matteoveroni.com.cryptocurrencyconverter;
+package matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies;
 
 /**
  * @author Matteo Veroni

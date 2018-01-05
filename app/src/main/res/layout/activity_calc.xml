@@ -13,6 +13,7 @@
         android:layout_marginTop="20dp"
         android:text="Amount to convert:"
         android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -42,13 +43,14 @@
         android:ems="10"
         android:text="Convert From:"
         android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/txt_amountToConvert" />
 
     <com.toptoche.searchablespinnerlibrary.SearchableSpinner
         android:id="@+id/spinnerConvertFrom"
-        android:layout_width="250dp"
+        android:layout_width="175dp"
         android:layout_height="32dp"
         android:layout_marginTop="8dp"
         android:textAppearance="?android:attr/textAppearanceSmall"
@@ -79,6 +81,7 @@
         android:ems="10"
         android:text="Convert To:"
         android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_switchCurrencies" />
@@ -86,9 +89,13 @@
 
     <com.toptoche.searchablespinnerlibrary.SearchableSpinner
         android:id="@+id/spinnerConvertTo"
-        android:layout_width="250dp"
+        android:layout_width="175dp"
         android:layout_height="32dp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
         android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -103,7 +110,7 @@
         android:text="Convert"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/spinnerConvertTo" />F
+        app:layout_constraintTop_toBottomOf="@+id/spinnerConvertTo" />
 
     <TextView
         android:id="@+id/lbl_conversionResult"

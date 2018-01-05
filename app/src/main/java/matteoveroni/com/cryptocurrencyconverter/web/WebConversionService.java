@@ -23,7 +23,7 @@ public interface WebConversionService {
     // SUPPORTED CURRENCIES => https://www.cryptonator.com/api/currencies
 
     @GET("ticker/{convertFrom}-{convertTo}")
-    Call<WebConversion> getConversion(@Path("convertFrom") String convertFrom, @Path("convertTo") String convertTo);
+    Call<WebConversion> getWebConversion(@Path("convertFrom") String convertFrom, @Path("convertTo") String convertTo);
 
     @GET("currencies")
     Call<WebCurrenciesList> getAllCurrenciesList();

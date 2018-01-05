@@ -1,14 +1,12 @@
 package matteoveroni.com.cryptocurrencyconverter;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.support.annotation.NonNull;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-
-import org.w3c.dom.Text;
 
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.Currency;
 
@@ -16,7 +14,7 @@ import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.Currency;
  * @author Matteo Veroni
  */
 
-public class CurrencyAdapter extends ArrayAdapter<Currency> {
+public final class CurrencyAdapter extends ArrayAdapter<Currency> {
 
     // Your sent context
     private Context context;
@@ -41,25 +39,22 @@ public class CurrencyAdapter extends ArrayAdapter<Currency> {
         return getViewOptimize(position, convertView, parent);
     }
 
-    public View getViewOptimize(int position, View convertView, ViewGroup parent) {
+    private View getViewOptimize(int position, View convertView, ViewGroup parent) {
         ViewHolder viewHolder;
         if (convertView == null) {
-            TextView lbl_currency = new TextView(context);
-            lbl_currency.setTextColor(Color.BLACK);
-
+            convertView = LayoutInflater.from(context).inflate(R.layout.item_spinner_currency, parent, false);
+            TextView lbl_currency = convertView.findViewById(R.id.txt_item_spinner_currency);
             viewHolder = new ViewHolder(lbl_currency);
-
-            convertView = lbl_currency;
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        Currency currency = getItem(position);
+        final Currency currency = getItem(position);
         viewHolder.lbl_currency.setText(currency.toString());
         return convertView;
     }
 
-    private final static class ViewHolder {
+    private static final class ViewHolder {
         TextView lbl_currency;
 
         ViewHolder(TextView lbl_currency) {
