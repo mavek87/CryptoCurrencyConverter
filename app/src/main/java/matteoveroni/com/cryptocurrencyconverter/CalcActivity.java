@@ -1,9 +1,11 @@
 package matteoveroni.com.cryptocurrencyconverter;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.Editable;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -16,7 +18,6 @@ import com.toptoche.searchablespinnerlibrary.SearchableSpinner;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.w3c.dom.Text;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,9 +25,8 @@ import java.util.Map;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import butterknife.OnEditorAction;
 import butterknife.OnTextChanged;
-import matteoveroni.com.cryptocurrencyconverter.web.WebConversionService;
+import matteoveroni.com.cryptocurrencyconverter.web.WebConversionAPI;
 import matteoveroni.com.cryptocurrencyconverter.web.WebConversionServiceBuilder;
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.Currency;
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.FamousCurrencies;
@@ -57,7 +57,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     TextView lbl_conversionResult;
 
     private ArrayAdapter currencyAdapter;
-    private WebConversionService conversionService;
+    private WebConversionAPI webConversionAPI;
 
     private int spinnerConvertFromId;
     private int spinnerConvertToId;
@@ -96,8 +96,8 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
         txt_amountToConvert.setText("1");
 
-        conversionService = WebConversionServiceBuilder.build();
-        currencyConverter = new CurrencyConverter(getApplicationContext(), conversionService, lbl_conversionResult);
+        webConversionAPI = WebConversionServiceBuilder.build();
+        currencyConverter = new CurrencyConverter(getApplicationContext(), webConversionAPI, lbl_conversionResult);
 
         spinnerConvertFromId = spinnerConvertFrom.getId();
         spinnerConvertFrom.setOnItemSelectedListener(this);
@@ -110,9 +110,25 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         populateCurrenciesSpinners();
     }
 
+    @OnTextChanged(R.id.txt_amountToConvert)
+    public void onTextAmountToConvertChange() {
+        lbl_conversionResult.setText("");
+    }
+
     @OnTextChanged(value = R.id.txt_amountToConvert, callback = OnTextChanged.Callback.AFTER_TEXT_CHANGED)
-    void onEditTxtAmountToConvert() {
+    void onEditTxtAmountToConvertChanged() {
+        // Move the insertion cursor in the last position of the EditText
         txt_amountToConvert.setSelection(txt_amountToConvert.getText().length());
+    }
+
+    @OnClick(R.id.lbl_conversionResult)
+    public void onClickOntoResult() {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clipboardData = ClipData.newPlainText("conversionResult", lbl_conversionResult.getText().toString());
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(clipboardData);
+            Toast.makeText(this, "Result copied into your clipboard", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @OnClick(R.id.btn_switchCurrencies)
@@ -157,7 +173,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private void populateCurrenciesSpinners() {
-        final Call<WebCurrenciesList> currenciesRequest = conversionService.getAllCurrenciesList();
+        final Call<WebCurrenciesList> currenciesRequest = webConversionAPI.getAllCurrenciesList();
         currenciesRequest.enqueue(new Callback<WebCurrenciesList>() {
 
             @Override

@@ -10,7 +10,7 @@ import retrofit2.http.Path;
  * @author Matteo Veroni
  */
 
-public interface WebConversionService {
+public interface WebConversionAPI {
 
     // Website API: https://www.cryptonator.com/api/
 

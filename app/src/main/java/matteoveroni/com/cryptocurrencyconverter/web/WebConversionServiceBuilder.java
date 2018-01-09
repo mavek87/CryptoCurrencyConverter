@@ -8,11 +8,11 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 
 public final class WebConversionServiceBuilder {
-    public static WebConversionService build() {
+    public static WebConversionAPI build() {
         final Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(WebConversionService.WEB_CONVERSION_BASE_URL)
+                .baseUrl(WebConversionAPI.WEB_CONVERSION_BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        return retrofit.create(WebConversionService.class);
+        return retrofit.create(WebConversionAPI.class);
     }
 }
