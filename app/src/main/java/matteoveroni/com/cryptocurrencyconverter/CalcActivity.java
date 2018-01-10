@@ -58,6 +58,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private ArrayAdapter currencyAdapter;
     private WebConversionAPI webConversionAPI;
+    private ConnectionChecker connectionChecker;
 
     private int spinnerConvertFromId;
     private int spinnerConvertToId;
@@ -67,6 +68,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     private Currency currencyToConvertTo;
 
     private Map<String, Currency> currencies = new HashMap<>();
+
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -98,6 +100,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
         webConversionAPI = WebConversionServiceBuilder.build();
         currencyConverter = new CurrencyConverter(getApplicationContext(), webConversionAPI, lbl_conversionResult);
+        connectionChecker = new ConnectionChecker(getApplicationContext());
 
         spinnerConvertFromId = spinnerConvertFrom.getId();
         spinnerConvertFrom.setOnItemSelectedListener(this);
