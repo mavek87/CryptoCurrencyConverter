@@ -1,7 +1,7 @@
 <resources>
 
     <style name="AppTheme" parent="Theme.AppCompat.Light">
-        <item name="colorPrimary">@color/colorYellowDark</item>
+        <item name="colorPrimary">@color/colorYellowLight</item>
         <item name="colorPrimaryDark">@color/colorBlack</item>
         <item name="colorAccent">@color/colorBlueAccent</item>
         <item name="android:textColorPrimary">@color/colorBlack</item>

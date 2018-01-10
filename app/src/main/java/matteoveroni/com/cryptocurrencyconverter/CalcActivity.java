@@ -3,10 +3,10 @@ package matteoveroni.com.cryptocurrencyconverter;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -36,7 +36,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class CalcActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+public class CalcActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, ConnectionChecker.NetworkConnectionObserver, DialogInterface.OnClickListener {
 
     private static final String TAG = CalcActivity.class.getSimpleName();
 
@@ -60,6 +60,8 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     private ArrayAdapter currencyAdapter;
     private WebConversionAPI webConversionAPI;
     private ConnectionChecker connectionChecker;
+    private DialogBuilder dialogBuilder;
+    private boolean isDialogShown = false;
 
     private int spinnerConvertFromId;
     private int spinnerConvertToId;
@@ -69,6 +71,23 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     private Currency currencyToConvertTo;
 
     private Map<String, Currency> currencies = new HashMap<>();
+
+    public void showDialog(String title, String message, boolean status) {
+        isDialogShown = true;
+        dialogBuilder.build(title, message, status, this).show();
+    }
+
+    @Override
+    public void onClick(DialogInterface dialog, int which) {
+        populateViewOrHandleNetworkConnectionError();
+    }
+
+    @Override
+    public void readNetworkResponse(boolean isConnectedToWeb) {
+        if (!isConnectedToWeb && !isDialogShown) {
+            showNetworkErrorDialog();
+        }
+    }
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -102,7 +121,11 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
         webConversionAPI = WebConversionServiceBuilder.build();
         currencyConverter = new CurrencyConverter(getApplicationContext(), webConversionAPI, lbl_conversionResult);
+
+        dialogBuilder = new DialogBuilder(CalcActivity.this);
+
         connectionChecker = new ConnectionChecker(getApplicationContext());
+        connectionChecker.startToCheckConnection(this);
 
         spinnerConvertFromId = spinnerConvertFrom.getId();
         spinnerConvertFrom.setOnItemSelectedListener(this);
@@ -112,7 +135,7 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         spinnerConvertTo.setOnItemSelectedListener(this);
         spinnerConvertTo.setTitle(SPINNER_TITLE_SELECT_CURRENCY);
 
-        populateCurrenciesSpinners();
+        populateViewOrHandleNetworkConnectionError();
     }
 
     @OnTextChanged(R.id.txt_amountToConvert)
@@ -141,6 +164,8 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     @OnClick(R.id.btn_switchCurrencies)
     public void onButtonSwitchCurrenciesClicked() {
         lbl_conversionResult.setText("");
+
+        if (currencyToConvertFrom == null || currencyToConvertTo == null) return;
 
         Currency oldCurrencyToConvertFrom = currencyToConvertFrom;
         Currency oldCurrencyToConvertTo = currencyToConvertTo;
@@ -179,6 +204,16 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         currencyConverter.convert(amountToConvert, convertFrom, convertTo);
     }
 
+    private void populateViewOrHandleNetworkConnectionError() {
+        boolean isConnected = connectionChecker.isConnectedToNetwork();
+        if (isConnected) {
+            isDialogShown = false;
+            populateCurrenciesSpinners();
+        } else {
+            showNetworkErrorDialog();
+        }
+    }
+
     private void populateCurrenciesSpinners() {
         final Call<WebCurrenciesList> currenciesRequest = webConversionAPI.getAllCurrenciesList();
         currenciesRequest.enqueue(new Callback<WebCurrenciesList>() {
@@ -210,6 +245,10 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
                 Toast.makeText(CalcActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showNetworkErrorDialog() {
+        showDialog("Network error", "Turn on your internet connection to use this application", false);
     }
 
     private void populateSpinnersUsingDollarsAndBitcoin() {
