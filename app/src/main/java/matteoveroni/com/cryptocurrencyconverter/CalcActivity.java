@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -69,9 +70,10 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
     private Map<String, Currency> currencies = new HashMap<>();
 
-
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        lbl_conversionResult.setText("");
+
         final int parentID = parent.getId();
 
         if (parentID == spinnerConvertFromId) {
@@ -126,11 +128,13 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
     @OnClick(R.id.lbl_conversionResult)
     public void onClickOntoResult() {
+        if (lbl_conversionResult.getText().toString().trim().isEmpty()) return;
+
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clipboardData = ClipData.newPlainText("conversionResult", lbl_conversionResult.getText().toString());
         if (clipboard != null) {
             clipboard.setPrimaryClip(clipboardData);
-            Toast.makeText(this, "Result copied into your clipboard", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Copied into your clipboard", Toast.LENGTH_SHORT).show();
         }
     }
 
