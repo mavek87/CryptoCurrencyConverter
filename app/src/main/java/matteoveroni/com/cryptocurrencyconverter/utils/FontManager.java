@@ -1,4 +1,4 @@
-package matteoveroni.com.cryptocurrencyconverter;
+package matteoveroni.com.cryptocurrencyconverter.utils;
 
 import android.content.Context;
 import android.graphics.Typeface;

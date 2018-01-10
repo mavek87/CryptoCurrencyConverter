@@ -27,6 +27,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnTextChanged;
+import matteoveroni.com.cryptocurrencyconverter.utils.ConnectionChecker;
+import matteoveroni.com.cryptocurrencyconverter.utils.DialogBuilder;
+import matteoveroni.com.cryptocurrencyconverter.utils.FontManager;
 import matteoveroni.com.cryptocurrencyconverter.web.WebConversionAPI;
 import matteoveroni.com.cryptocurrencyconverter.web.WebConversionServiceBuilder;
 import matteoveroni.com.cryptocurrencyconverter.web.pojos.currencies.Currency;
@@ -39,8 +42,17 @@ import retrofit2.Response;
 public class CalcActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener, ConnectionChecker.NetworkConnectionObserver, DialogInterface.OnClickListener {
 
     private static final String TAG = CalcActivity.class.getSimpleName();
-
     private static final String SPINNER_TITLE_SELECT_CURRENCY = "Select currency";
+
+    private final Map<String, Currency> currencies = new HashMap<>();
+
+    private ArrayAdapter currencyAdapter;
+    private ConnectionChecker connectionChecker;
+    private DialogBuilder dialogBuilder;
+    private WebConversionAPI webConversionAPI;
+    private CurrencyConverter currencyConverter;
+    private Currency currencyToConvertFrom;
+    private Currency currencyToConvertTo;
 
     @BindView(R.id.lbl_amountToConvert)
     TextView lbl_amountToConvert;
@@ -57,56 +69,9 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
     @BindView(R.id.lbl_conversionResult)
     TextView lbl_conversionResult;
 
-    private ArrayAdapter currencyAdapter;
-    private WebConversionAPI webConversionAPI;
-    private ConnectionChecker connectionChecker;
-    private DialogBuilder dialogBuilder;
     private boolean isDialogShown = false;
-
     private int spinnerConvertFromId;
     private int spinnerConvertToId;
-
-    private CurrencyConverter currencyConverter;
-    private Currency currencyToConvertFrom;
-    private Currency currencyToConvertTo;
-
-    private Map<String, Currency> currencies = new HashMap<>();
-
-    public void showDialog(String title, String message, boolean status) {
-        isDialogShown = true;
-        dialogBuilder.build(title, message, status, this).show();
-    }
-
-    @Override
-    public void onClick(DialogInterface dialog, int which) {
-        populateViewOrHandleNetworkConnectionError();
-    }
-
-    @Override
-    public void readNetworkResponse(boolean isConnectedToWeb) {
-        if (!isConnectedToWeb && !isDialogShown) {
-            showNetworkErrorDialog();
-        }
-    }
-
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        lbl_conversionResult.setText("");
-
-        final int parentID = parent.getId();
-
-        if (parentID == spinnerConvertFromId) {
-            currencyToConvertFrom = (Currency) spinnerConvertFrom.getSelectedItem();
-            lbl_amountToConvert.setText(String.format("%s %s (%s):", "Amount of", currencyToConvertFrom.getName(), currencyToConvertFrom.getCode()));
-        } else if (parentID == spinnerConvertToId) {
-            currencyToConvertTo = (Currency) spinnerConvertTo.getSelectedItem();
-        }
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        throw new RuntimeException("Unexpected exception. It should be impossible to not select anything in a spinner..");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,23 +84,44 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
 
         txt_amountToConvert.setText("1");
 
-        webConversionAPI = WebConversionServiceBuilder.build();
-        currencyConverter = new CurrencyConverter(getApplicationContext(), webConversionAPI, lbl_conversionResult);
-
-        dialogBuilder = new DialogBuilder(CalcActivity.this);
-
-        connectionChecker = new ConnectionChecker(getApplicationContext());
-        connectionChecker.startToCheckConnection(this);
-
-        spinnerConvertFromId = spinnerConvertFrom.getId();
-        spinnerConvertFrom.setOnItemSelectedListener(this);
-        spinnerConvertFrom.setTitle(SPINNER_TITLE_SELECT_CURRENCY);
-
-        spinnerConvertToId = spinnerConvertTo.getId();
-        spinnerConvertTo.setOnItemSelectedListener(this);
-        spinnerConvertTo.setTitle(SPINNER_TITLE_SELECT_CURRENCY);
-
+        buildComponents();
         populateViewOrHandleNetworkConnectionError();
+    }
+
+    // DialogInterface.OnClickListener
+
+    @Override
+    public void onClick(DialogInterface dialog, int which) {
+        populateViewOrHandleNetworkConnectionError();
+    }
+
+    // ConnectionChecker.NetworkConnectionObserver
+
+    @Override
+    public void readNetworkResponse(boolean isConnectedToWeb) {
+        if (!isConnectedToWeb && !isDialogShown) {
+            showNetworkErrorDialog();
+        }
+    }
+
+    // AdapterView.OnItemSelectedListener
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        lbl_conversionResult.setText("");
+
+        int parentID = parent.getId();
+        if (parentID == spinnerConvertFromId) {
+            currencyToConvertFrom = (Currency) spinnerConvertFrom.getSelectedItem();
+            lbl_amountToConvert.setText(String.format("%s %s (%s):", "Amount of", currencyToConvertFrom.getName(), currencyToConvertFrom.getCode()));
+        } else if (parentID == spinnerConvertToId) {
+            currencyToConvertTo = (Currency) spinnerConvertTo.getSelectedItem();
+        }
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+        throw new RuntimeException("Unexpected exception. It should be impossible to not select anything in a spinner..");
     }
 
     @OnTextChanged(R.id.txt_amountToConvert)
@@ -204,6 +190,24 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         currencyConverter.convert(amountToConvert, convertFrom, convertTo);
     }
 
+    private void buildComponents() {
+        webConversionAPI = WebConversionServiceBuilder.build();
+        currencyConverter = new CurrencyConverter(getApplicationContext(), webConversionAPI, lbl_conversionResult);
+
+        dialogBuilder = new DialogBuilder(CalcActivity.this);
+
+        connectionChecker = new ConnectionChecker(getApplicationContext());
+        connectionChecker.startToCheckConnection(this);
+
+        spinnerConvertFromId = spinnerConvertFrom.getId();
+        spinnerConvertFrom.setOnItemSelectedListener(this);
+        spinnerConvertFrom.setTitle(SPINNER_TITLE_SELECT_CURRENCY);
+
+        spinnerConvertToId = spinnerConvertTo.getId();
+        spinnerConvertTo.setOnItemSelectedListener(this);
+        spinnerConvertTo.setTitle(SPINNER_TITLE_SELECT_CURRENCY);
+    }
+
     private void populateViewOrHandleNetworkConnectionError() {
         boolean isConnected = connectionChecker.isConnectedToNetwork();
         if (isConnected) {
@@ -232,11 +236,8 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
                         currencies.put(currency.getCode(), currency);
                     }
 
-                    currencyAdapter = new CurrencyAdapter(getApplicationContext(), currenciesList.getRows());
-                    spinnerConvertFrom.setAdapter(currencyAdapter);
-                    spinnerConvertTo.setAdapter(currencyAdapter);
-
-                    populateSpinnersUsingDollarsAndBitcoin();
+                    populateSpinnersAdapter(currenciesList.getRows());
+                    spinnersSelectBitcoinAndDollars();
                 }
             }
 
@@ -247,17 +248,31 @@ public class CalcActivity extends AppCompatActivity implements AdapterView.OnIte
         });
     }
 
+    private void showDialog(String title, String message, boolean status) {
+        isDialogShown = true;
+        dialogBuilder.build(title, message, status, this).show();
+    }
+
     private void showNetworkErrorDialog() {
         showDialog("Network error", "Turn on your internet connection to use this application", false);
     }
 
-    private void populateSpinnersUsingDollarsAndBitcoin() {
+    private void populateSpinnersAdapter(Currency[] currencies) {
+        currencyAdapter = new CurrencyAdapter(getApplicationContext(), currencies);
+        spinnerConvertFrom.setAdapter(currencyAdapter);
+        spinnerConvertTo.setAdapter(currencyAdapter);
+    }
+
+    private void spinnersSelectBitcoinAndDollars() {
         selectCurrencyInSpinner(FamousCurrencies.Bitcoin.getCode(), spinnerConvertFrom);
         selectCurrencyInSpinner(FamousCurrencies.Dollar.getCode(), spinnerConvertTo);
     }
 
     private void selectCurrencyInSpinner(String currencyCode, Spinner spinner) {
         Currency currency = currencies.get(currencyCode.toUpperCase());
+
+        if (currency == null) return;
+
         int currencyPosition = currencyAdapter.getPosition(currency);
         spinner.setSelection(currencyPosition);
     }

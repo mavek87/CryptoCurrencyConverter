@@ -1,11 +1,12 @@
-package matteoveroni.com.cryptocurrencyconverter;
+package matteoveroni.com.cryptocurrencyconverter.utils;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AlertDialog;
+
+import matteoveroni.com.cryptocurrencyconverter.R;
 
 /**
  * @author Matteo Veroni
